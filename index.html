@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chatly</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E%F0%9F%92%AC%3C/text%3E%3C/svg%3E">
+<style>
+:root{--bg:#f0f2f5;--panel:#fff;--text:#111b21;--muted:#667781;--line:#e9edef;--accent:#00a884;--accent-d:#008069;--chat:#efeae2;--mine:#d9fdd3;--theirs:#fff;--tick:#8696a0;--read:#53bdeb;--hover:#f5f6f6;--danger:#d93025}
+@media (prefers-color-scheme:dark){:root{--bg:#0b141a;--panel:#111b21;--text:#e9edef;--muted:#8696a0;--line:#222d34;--chat:#0b141a;--mine:#005c4b;--theirs:#202c33;--hover:#202c33}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:15px}
+button{font:inherit;cursor:pointer}
+[hidden]{display:none!important}
+.login{min-height:100%;display:grid;place-items:center;padding:20px;background:linear-gradient(160deg,var(--accent-d) 0 220px,var(--bg) 220px)}
+.card{background:var(--panel);width:100%;max-width:380px;border-radius:14px;padding:28px 24px;box-shadow:0 8px 30px rgba(0,0,0,.18)}
+.card h1{margin:0 0 4px;font-size:26px}.card p{margin:0 0 18px;color:var(--muted)}
+.card input{width:100%;padding:12px 14px;margin-bottom:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);font-size:16px;outline:none}
+.card input:focus{border-color:var(--accent)}
+.btn{width:100%;padding:12px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:600;font-size:16px}
+.btn:hover{background:var(--accent-d)}
+.err{color:var(--danger);min-height:20px;font-size:14px;margin:4px 0}
+#app{height:100%;display:flex;max-width:1400px;margin:0 auto;background:var(--panel)}
+aside{width:380px;flex:none;border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0}
+.bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--line);min-height:60px}
+.bar b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar small{color:var(--muted);font-size:12.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grow{flex:1;min-width:0}
+.ib{border:0;background:transparent;color:var(--text);width:38px;height:38px;border-radius:50%;font-size:20px;flex:none}
+.ib:hover{background:var(--hover)}
+.av{width:42px;height:42px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;font-weight:700;position:relative}
+.dot{position:absolute;right:0;bottom:0;width:12px;height:12px;border-radius:50%;background:var(--accent);border:2px solid var(--panel)}
+.conn{font-size:12px;padding:3px 8px;border-radius:10px;background:var(--hover);color:var(--muted);white-space:nowrap}
+.conn.ok{color:var(--accent)}.conn.bad{color:var(--danger)}
+#list{overflow-y:auto;flex:1}
+.row{display:flex;gap:12px;padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--line);align-items:center}
+.row:hover,.row.on{background:var(--hover)}
+.row .t{display:flex;justify-content:space-between;gap:8px}
+.row .t b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .t span{font-size:12px;color:var(--muted);flex:none}
+.row .p{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:14px;margin-top:2px}
+.row .p span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{background:var(--accent);color:#fff;border-radius:11px;min-width:22px;height:22px;padding:0 6px;display:grid;place-items:center;font-size:12px;font-weight:700;flex:none}
+.none{color:var(--muted);text-align:center;padding:40px 20px}
+#chat{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--chat)}
+#empty{margin:auto;color:var(--muted);text-align:center;padding:20px}
+#empty h2{color:var(--text);margin:0 0 6px}
+#pane{display:flex;flex-direction:column;height:100%}
+#pane .bar{background:var(--panel)}
+#msgs{flex:1;overflow-y:auto;padding:14px 5%;display:flex;flex-direction:column;gap:3px}
+.day{align-self:center;background:var(--panel);color:var(--muted);font-size:12px;padding:4px 10px;border-radius:8px;margin:8px 0}
+.m{max-width:min(75%,560px);padding:6px 9px 4px;border-radius:9px;background:var(--theirs);align-self:flex-start;box-shadow:0 1px 1px rgba(0,0,0,.12);word-wrap:break-word;overflow-wrap:anywhere}
+.m.me{background:var(--mine);align-self:flex-end}
+.m.anim{animation:in .18s ease both}
+@keyframes in{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}
+.m .who{font-size:12.5px;font-weight:700;margin-bottom:1px}
+.m .x{white-space:pre-wrap}
+.m .i{float:right;margin:6px 0 0 10px;font-size:11px;color:var(--muted);display:flex;gap:3px;align-items:center}
+.m .i .tk{font-size:13px;letter-spacing:-3px;color:var(--tick)}
+.m .i .tk.r{color:var(--read)}.m .i .tk.f{color:var(--danger)}
+.m::after{content:"";display:block;clear:both}
+#composer{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--panel);border-top:1px solid var(--line)}
+#text{flex:1;min-width:0;padding:11px 14px;border-radius:22px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:16px;outline:none}
+#send{border:0;width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;font-size:18px;flex:none;transition:transform .15s}
+#send:active{transform:scale(.9)}
+#back{display:none}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:grid;place-items:center;padding:16px;z-index:20}
+.modal .card{max-height:90vh;display:flex;flex-direction:column;padding:18px}
+.modal h3{margin:0 0 10px}
+.ulist{overflow-y:auto;flex:1;margin:6px 0;border:1px solid var(--line);border-radius:10px;min-height:80px;max-height:300px}
+.ulist label{display:flex;gap:10px;align-items:center;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--line)}
+.ulist label:last-child{border:0}
+.ulist .av{width:34px;height:34px;font-size:13px}
+.ulist input{width:auto;margin:0}
+.mrow{display:flex;gap:8px;margin-top:8px}.mrow .btn{padding:10px}
+.btn.sec{background:var(--hover);color:var(--text)}
+@media (max-width:760px){
+ aside{width:100%;border:0}
+ #chat{display:none;position:fixed;inset:0;z-index:5}
+ #app.chat-open #chat{display:flex}
+ #back{display:block}
+ #msgs{padding:12px 10px}
+ .m{max-width:84%}
+}
+</style>
+</head>
+<body>
+<div class="login" id="login">
+  <form class="card" id="loginForm" autocomplete="on">
+    <h1>Chatly</h1><p>Real-time chat. Sign in, or pick a new username to create an account.</p>
+    <input id="u" placeholder="Username (3-20 letters, numbers, _)" autocomplete="username" autocapitalize="none" required>
+    <input id="p" type="password" placeholder="Password (min 4 characters)" autocomplete="current-password" required>
+    <div class="err" id="loginErr"></div>
+    <button class="btn">Continue</button>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <aside>
+    <div class="bar">
+      <div class="av" id="meAv"></div>
+      <div class="grow"><b id="meName"></b><small><span class="conn" id="conn">connecting</span></small></div>
+      <button class="ib" id="newBtn" title="New chat or group">&#xFF0B;</button>
+      <button class="ib" id="logout" title="Log out">&#x23FB;</button>
+    </div>
+    <div id="list"></div>
+  </aside>
+  <section id="chat">
+    <div id="empty"><h2>Chatly</h2>Select a conversation, or press + to start a new chat.</div>
+    <div id="pane" hidden>
+      <div class="bar">
+        <button class="ib" id="back" title="Back">&#x2190;</button>
+        <div class="av" id="cAv"></div>
+        <div class="grow"><b id="cName"></b><small id="cSub"></small></div>
+      </div>
+      <div id="msgs"></div>
+      <form id="composer" autocomplete="off">
+        <input id="text" placeholder="Type a message" maxlength="4000">
+        <button id="send" title="Send">&#x27A4;</button>
+      </form>
+    </div>
+  </section>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="card">
+    <h3>New chat</h3>
+    <input id="filter" placeholder="Search users" style="margin:0">
+    <div class="ulist" id="ulist"></div>
+    <input id="gname" placeholder="Group name (required for 2+ people)" maxlength="40" hidden>
+    <div class="err" id="mErr"></div>
+    <div class="mrow"><button class="btn sec" id="mCancel" type="button">Cancel</button><button class="btn" id="mStart" type="button">Start chat</button></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+function h(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  if (props) for (const k in props) { if (k === 'class') e.className = props[k]; else if (k.startsWith('on')) e[k] = props[k]; else e.setAttribute(k, props[k]); }
+  for (const k of kids) if (k != null) e.append(k.nodeType ? k : document.createTextNode(k));
+  return e;
+}
+const S = { token: null, me: null, ws: null, convs: new Map(), presence: {}, active: null, retry: 0, outbox: [], typing: {}, users: [], loggedOut: false, opened: false };
+
+/* ---------- helpers ---------- */
+const colors = ['#e53935', '#8e24aa', '#3949ab', '#039be5', '#00897b', '#7cb342', '#f4511e', '#6d4c41', '#546e7a', '#d81b60'];
+const colorOf = s => colors[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % colors.length];
+const initials = s => s.slice(0, 2).toUpperCase();
+function avatar(name, online) { const a = h('div', { class: 'av', style: 'background:' + colorOf(name) }, initials(name)); if (online) a.append(h('i', { class: 'dot' })); return a; }
+const other = c => c.members.find(m => m !== S.me) || S.me;
+const convName = c => c.type === 'group' ? c.name : other(c);
+const fmtTime = ts => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+function fmtDay(ts) {
+  const d = new Date(ts), t = new Date(); const y = new Date(); y.setDate(t.getDate() - 1);
+  if (d.toDateString() === t.toDateString()) return 'Today';
+  if (d.toDateString() === y.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function lastSeen(p) {
+  if (!p) return '';
+  if (p.online) return 'online';
+  return p.lastSeen ? 'last seen ' + (fmtDay(p.lastSeen) === 'Today' ? 'today at ' + fmtTime(p.lastSeen) : fmtDay(p.lastSeen) + ' ' + fmtTime(p.lastSeen)) : 'offline';
+}
+
+/* ---------- login ---------- */
+$('#loginForm').onsubmit = async e => {
+  e.preventDefault(); $('#loginErr').textContent = '';
+  try {
+    const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: $('#u').value, password: $('#p').value }) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Login failed');
+    localStorage.setItem('chatly:session', JSON.stringify({ token: j.token, username: j.username }));
+    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+    start(j.token, j.username);
+  } catch (err) { $('#loginErr').textContent = err.message; }
+};
+$('#logout').onclick = () => { localStorage.removeItem('chatly:session'); S.loggedOut = true; if (S.ws) S.ws.close(); location.reload(); };
+
+function start(token, me) {
+  S.token = token; S.me = me; S.loggedOut = false;
+  $('#login').hidden = true; $('#app').hidden = false;
+  $('#meName').textContent = me; $('#meAv').replaceWith(Object.assign(avatar(me), { id: 'meAv' }));
+  loadCache(); renderList(); connect();
+}
+
+/* ---------- local cache (so the sync cursor survives a page reload) ---------- */
+const cacheKey = () => 'chatly:cache:' + S.me;
+function loadCache() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(cacheKey()) || '{}');
+    for (const cid in raw) {
+      const v = raw[cid]; if (!v.msgs.length) continue;
+      const c = mkConv(v.conv); c.msgs = v.msgs; c.last = v.msgs[0].seq - 1;
+      advance(c);
+    }
+  } catch (e) { /* ignore corrupt cache */ }
+}
+let saveT = null;
+function saveCache() {
+  clearTimeout(saveT);
+  saveT = setTimeout(() => {
+    const out = {};
+    for (const [cid, c] of S.convs) out[cid] = { conv: { id: c.id, type: c.type, name: c.name, members: c.members, lastSeq: c.lastSeq, unread: c.unread, receipts: c.receipts }, msgs: c.msgs.filter(m => m.seq != null).slice(-200) };
+    try { localStorage.setItem(cacheKey(), JSON.stringify(out)); } catch (e) { /* quota */ }
+  }, 400);
+}
+
+/* ---------- connection with auto reconnect ---------- */
+function setConn(state) {
+  const el = $('#conn'); el.className = 'conn ' + (state === 'online' ? 'ok' : state === 'offline' ? 'bad' : '');
+  el.textContent = state === 'online' ? 'connected' : state === 'offline' ? 'reconnecting...' : 'connecting...';
+}
+function connect() {
+  setConn('connecting'); S.opened = false;
+  const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws?token=' + encodeURIComponent(S.token));
+  S.ws = ws;
+  ws.onopen = () => { S.opened = true; S.retry = 0; };
+  ws.onmessage = e => { try { onFrame(JSON.parse(e.data)); } catch (err) { console.error(err); } };
+  ws.onclose = () => {
+    if (S.ws !== ws || S.loggedOut) return;
+    setConn('offline'); renderChat();
+    if (!S.opened && S.retry >= 3) { localStorage.removeItem('chatly:session'); location.reload(); return; }   // token rejected
+    const d = Math.min(15000, 500 * 2 ** S.retry++) * (0.5 + Math.random() / 2);  // exponential backoff + jitter
+    setTimeout(connect, d);
+  };
+}
+const wsSend = o => { if (S.ws && S.ws.readyState === 1) S.ws.send(JSON.stringify(o)); };
+function flushOutbox() {
+  for (const f of S.outbox) if (f.conn !== S.ws && S.ws && S.ws.readyState === 1) { f.conn = S.ws; wsSend(f.frame); }
+}
+
+/* ---------- conversation model ---------- */
+function mkConv(v) {
+  let c = S.convs.get(v.id);
+  if (!c) { c = { id: v.id, msgs: [], last: 0, ackSent: 0, readSent: 0, fetchAt: 0 }; S.convs.set(v.id, c); }
+  Object.assign(c, { type: v.type, name: v.name, members: v.members, lastSeq: v.lastSeq, unread: v.unread || 0, receipts: v.receipts || {} });
+  return c;
+}
+function advance(c) { while (c.msgs.some(m => m.seq === c.last + 1)) c.last++; }
+function addMsg(c, m) {
+  if (c.msgs.some(x => x.seq === m.seq)) return false;
+  const p = c.msgs.find(x => x.seq == null && x.id === m.id && x.from === m.from);
+  if (p) Object.assign(p, m, { pending: false }); else c.msgs.push({ ...m });
+  c.msgs.sort((a, b) => (a.seq ?? 1e15) - (b.seq ?? 1e15));     // ordering is by server sequence number
+  advance(c);
+  return true;
+}
+function checkGap(c) {                                           // a hole in the sequence => ask the server for it
+  if (c.msgs.some(m => m.seq != null && m.seq > c.last + 1) && Date.now() - c.fetchAt > 1500) {
+    c.fetchAt = Date.now(); wsSend({ t: 'fetch', cid: c.id, from: c.last + 1 });
+  }
+}
+function acknowledge(c) {
+  if (c.last <= 0) return;
+  const active = S.active === c.id && !document.hidden;
+  if (active) { if (c.last > c.readSent) { c.readSent = c.ackSent = c.last; c.unread = 0; wsSend({ t: 'read', cid: c.id, seq: c.last }); } }
+  else if (c.last > c.ackSent) { c.ackSent = c.last; wsSend({ t: 'ack', cid: c.id, seq: c.last }); }
+}
+function notify(c, m) {
+  if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+    const n = new Notification(m.from + (c.type === 'group' ? ' in ' + c.name : ''), { body: m.text, tag: c.id });
+    n.onclick = () => { window.focus(); openChat(c.id); };
+  }
+}
+
+/* ---------- incoming frames ---------- */
+function onFrame(f) {
+  switch (f.t) {
+    case 'ready': {
+      setConn('online');
+      Object.assign(S.presence, f.peers);
+      for (const v of f.convs) mkConv(v);
+      const cursors = {}; for (const [cid, c] of S.convs) if (c.msgs.length) cursors[cid] = c.last;
+      wsSend({ t: 'sync', cursors }); wsSend({ t: 'users' });
+      flushOutbox(); renderList(); renderChat(); break;
+    }
+    case 'sync': {
+      const c = S.convs.get(f.cid); if (!c) break;
+      if (c.last === 0 && c.msgs.length === 0 && f.msgs.length) c.last = f.msgs[0].seq - 1;
+      for (const m of f.msgs) addMsg(c, m);
+      checkGap(c); acknowledge(c); saveCache(); renderList(); if (S.active === c.id) renderChat(); break;
+    }
+    case 'msg': {
+      const c = S.convs.get(f.cid); if (!c) break;
+      const prevSeq = c.lastSeq;
+      const isNew = addMsg(c, f.m); if (!isNew) break;
+      c.lastSeq = Math.max(c.lastSeq, f.m.seq);
+      if (f.m.from !== S.me) {
+        if (!(S.active === c.id && !document.hidden)) { if (f.m.seq > prevSeq) c.unread++; notify(c, f.m); }
+        checkGap(c); acknowledge(c);
+      }
+      saveCache(); renderList(); if (S.active === c.id) renderChat(true); break;
+    }
+    case 'sent': {
+      const c = S.convs.get(f.cid); if (!c) break;
+      const p = c.msgs.find(x => x.id === f.id && x.from === S.me);
+      if (p) { p.seq = f.seq; p.ts = f.ts; p.pending = false; }
+      c.lastSeq = Math.max(c.lastSeq, f.seq);
+      c.msgs.sort((a, b) => (a.seq ?? 1e15) - (b.seq ?? 1e15)); advance(c); checkGap(c);
+      S.outbox = S.outbox.filter(o => o.frame.id !== f.id);
+      saveCache(); renderList(); if (S.active === c.id) renderChat(true); break;
+    }
+    case 'receipt': {
+      const c = S.convs.get(f.cid); if (!c) break;
+      c.receipts[f.user] = { delivered: f.delivered, read: f.read };
+      if (S.active === c.id) renderChat(); break;
+    }
+    case 'conv': {
+      Object.assign(S.presence, f.peers);
+      const c = mkConv(f.conv);
+      if (f.conv.lastSeq > 0 && !c.msgs.length) wsSend({ t: 'sync', cursors: {} });
+      renderList(); if (f.open) openChat(c.id); break;
+    }
+    case 'presence': S.presence[f.user] = { online: f.online, lastSeen: f.lastSeen }; renderList(); renderChat(); break;
+    case 'typing': {
+      S.typing[f.cid + '|' + f.user] = Date.now();
+      renderHeader(); setTimeout(renderHeader, 3100); break;
+    }
+    case 'users': S.users = f.users; renderUsers(); break;
+    case 'error': {
+      if (f.id) {
+        S.outbox = S.outbox.filter(o => o.frame.id !== f.id);
+        for (const c of S.convs.values()) { const p = c.msgs.find(x => x.id === f.id && x.seq == null); if (p) { p.pending = false; p.failed = true; } }
+        renderChat();
+      }
+      if (f.code === 'rate_limited') alert('You are sending messages too fast. Slow down a little.');
+      if (f.code === 'group_name') $('#mErr').textContent = 'Enter a group name.';
+      if (f.code === 'group_size') $('#mErr').textContent = 'Pick at least one other person.';
+    }
+  }
+}
+
+/* ---------- rendering ---------- */
+function lastMsg(c) { return c.msgs[c.msgs.length - 1]; }
+function renderList() {
+  const list = $('#list'); list.textContent = '';
+  const convs = [...S.convs.values()].sort((a, b) => ((lastMsg(b) || {}).ts || 0) - ((lastMsg(a) || {}).ts || 0));
+  if (!convs.length) { list.append(h('div', { class: 'none' }, 'No chats yet. Press + to start one.')); updateTitle(); return; }
+  for (const c of convs) {
+    const lm = lastMsg(c), name = convName(c);
+    const online = c.type === 'direct' && S.presence[other(c)] && S.presence[other(c)].online;
+    const prev = lm ? (lm.from === S.me ? 'You: ' : (c.type === 'group' ? lm.from + ': ' : '')) + lm.text : 'No messages yet';
+    list.append(h('div', { class: 'row' + (S.active === c.id ? ' on' : ''), onclick: () => openChat(c.id) },
+      avatar(name, online),
+      h('div', { class: 'grow' },
+        h('div', { class: 't' }, h('b', null, name), h('span', null, lm ? fmtTime(lm.ts) : '')),
+        h('div', { class: 'p' }, h('span', null, prev), c.unread ? h('span', { class: 'badge' }, c.unread > 99 ? '99+' : c.unread) : null))));
+  }
+  updateTitle();
+}
+function updateTitle() { const n = [...S.convs.values()].reduce((a, c) => a + c.unread, 0); document.title = (n ? '(' + n + ') ' : '') + 'Chatly'; }
+function renderHeader() {
+  const c = S.convs.get(S.active); if (!c) return;
+  const typers = c.members.filter(m => m !== S.me && Date.now() - (S.typing[c.id + '|' + m] || 0) < 3000);
+  let sub;
+  if (typers.length) sub = c.type === 'group' ? typers.join(', ') + ' typing...' : 'typing...';
+  else if (c.type === 'direct') sub = lastSeen(S.presence[other(c)]);
+  else sub = c.members.map(m => m === S.me ? 'You' : m).join(', ');
+  $('#cSub').textContent = sub;
+}
+function ticks(c, m) {
+  if (m.failed) return h('span', { class: 'tk f', title: 'Failed' }, '!');
+  if (m.seq == null) return h('span', { class: 'tk', title: 'Sending' }, '\u23F2');
+  const others = c.members.filter(x => x !== S.me);
+  const rec = others.map(o => c.receipts[o] || { delivered: 0, read: 0 });
+  const read = Math.min(...rec.map(r => r.read)), deliv = Math.min(...rec.map(r => r.delivered));
+  if (m.seq <= read) return h('span', { class: 'tk r', title: 'Read' }, '\u2713\u2713');
+  if (m.seq <= deliv) return h('span', { class: 'tk', title: 'Delivered' }, '\u2713\u2713');
+  return h('span', { class: 'tk', title: 'Sent' }, '\u2713');
+}
+function renderChat(forceBottom) {
+  const c = S.convs.get(S.active);
+  $('#empty').hidden = !!c; $('#pane').hidden = !c;
+  if (!c) return;
+  const name = convName(c);
+  if ($('#cName').textContent !== name) { $('#cName').textContent = name; $('#cAv').replaceWith(Object.assign(avatar(name), { id: 'cAv' })); }
+  renderHeader();
+  const box = $('#msgs');
+  const near = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+  box.textContent = '';
+  let day = '';
+  for (const m of c.msgs) {
+    const d = fmtDay(m.ts); if (d !== day) { day = d; box.append(h('div', { class: 'day' }, d)); }
+    const mine = m.from === S.me;
+    const fresh = !m.shown; m.shown = true;
+    box.append(h('div', { class: 'm' + (mine ? ' me' : '') + (fresh ? ' anim' : '') },
+      !mine && c.type === 'group' ? h('div', { class: 'who', style: 'color:' + colorOf(m.from) }, m.from) : null,
+      h('span', { class: 'x' }, m.text),
+      h('span', { class: 'i' }, fmtTime(m.ts), mine ? ticks(c, m) : null)));
+  }
+  if (near || forceBottom) box.scrollTop = box.scrollHeight;
+}
+function openChat(cid) {
+  S.active = cid; const c = S.convs.get(cid);
+  $('#app').classList.add('chat-open');
+  renderChat(true); renderList(); acknowledge(c); renderList();
+  if (matchMedia('(min-width:761px)').matches) $('#text').focus();
+}
+$('#back').onclick = () => { S.active = null; $('#app').classList.remove('chat-open'); renderChat(); renderList(); };
+document.addEventListener('visibilitychange', () => { const c = S.convs.get(S.active); if (c && !document.hidden) { acknowledge(c); renderList(); renderChat(); } });
+
+/* ---------- composer ---------- */
+let lastTyping = 0;
+$('#text').oninput = () => { if (Date.now() - lastTyping > 2000 && S.active) { lastTyping = Date.now(); wsSend({ t: 'typing', cid: S.active }); } };
+$('#composer').onsubmit = e => {
+  e.preventDefault();
+  const t = $('#text').value.trim(); const c = S.convs.get(S.active);
+  if (!t || !c) return;
+  const id = uid();
+  c.msgs.push({ id, from: S.me, text: t, ts: Date.now(), seq: null, pending: true });   // optimistic UI
+  S.outbox.push({ frame: { t: 'send', cid: c.id, id, text: t }, conn: null });          // resent after reconnect, server dedupes by id
+  $('#text').value = ''; flushOutbox(); renderChat(true); renderList();
+};
+
+/* ---------- new chat / group modal ---------- */
+const picked = new Set();
+$('#newBtn').onclick = () => { picked.clear(); $('#filter').value = ''; $('#gname').value = ''; $('#mErr').textContent = ''; $('#modal').hidden = false; wsSend({ t: 'users' }); renderUsers(); $('#filter').focus(); };
+$('#mCancel').onclick = () => { $('#modal').hidden = true; };
+$('#modal').onclick = e => { if (e.target.id === 'modal') $('#modal').hidden = true; };
+$('#filter').oninput = renderUsers;
+function renderUsers() {
+  const box = $('#ulist'); box.textContent = '';
+  const q = $('#filter').value.trim().toLowerCase();
+  const us = S.users.filter(u => u.u.includes(q));
+  if (!us.length) box.append(h('div', { class: 'none' }, S.users.length ? 'No match' : 'No other users yet. Open Chatly in another browser and create a second account.'));
+  for (const u of us) {
+    const cb = h('input', { type: 'checkbox' }); cb.checked = picked.has(u.u);
+    cb.onchange = () => { cb.checked ? picked.add(u.u) : picked.delete(u.u); $('#gname').hidden = picked.size < 2; $('#mStart').textContent = picked.size > 1 ? 'Create group' : 'Start chat'; };
+    box.append(h('label', null, avatar(u.u, u.online), h('div', { class: 'grow' }, h('b', null, u.u), h('small', { style: 'display:block;color:var(--muted)' }, u.online ? 'online' : 'offline')), cb));
+  }
+}
+$('#mStart').onclick = () => {
+  const sel = [...picked];
+  if (!sel.length) { $('#mErr').textContent = 'Select at least one user.'; return; }
+  if (sel.length === 1) wsSend({ t: 'open_dm', with: sel[0] });
+  else { if (!$('#gname').value.trim()) { $('#mErr').textContent = 'Enter a group name.'; return; } wsSend({ t: 'create_group', name: $('#gname').value, members: sel }); }
+  $('#modal').hidden = true;
+};
+
+/* ---------- auto login ---------- */
+try { const s = JSON.parse(localStorage.getItem('chatly:session') || 'null'); if (s) start(s.token, s.username); } catch (e) { /* ignore */ }
+</script>
+</body>
+</html>
